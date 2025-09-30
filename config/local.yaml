@@ -1,0 +1,6 @@
+  env: "local" # Окружение # dev, prod
+  storage_path: "./storage/sso.db" # Файл для базы данных
+  token_ttl: 1h # Время действия токена авторизации
+  grpc: # Настройки gRPC сервера
+    port: 44044
+    timeout: 10h
