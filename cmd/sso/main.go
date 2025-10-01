@@ -1,6 +1,7 @@
 package main
 
 import (
+	"JWTGRPC/internal/app"
 	"JWTGRPC/internal/config"
 	"JWTGRPC/internal/lib/logger/handlers/slogpretty"
 	"log/slog"
@@ -22,9 +23,11 @@ func main() {
 	log := setupLogger(cfg.Env)
 	log.Info("starting application", slog.String("env", cfg.Env))
 
-	// TODO: Иннициализировать приложение (app)
+	//Запуск gRPC сервер приложения
+	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
+	application.GRPCSrv.MustRun()
 
-	// TODO: Запустить gRPC сервер приложения
+	// TODO: Иннициализировать приложение (app)
 }
 
 func setupLogger(env string) *slog.Logger {
