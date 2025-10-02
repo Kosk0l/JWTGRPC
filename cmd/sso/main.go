@@ -6,6 +6,8 @@ import (
 	"JWTGRPC/internal/lib/logger/handlers/slogpretty"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
@@ -25,9 +27,17 @@ func main() {
 
 	//Запуск gRPC сервер приложения
 	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
-	application.GRPCSrv.MustRun()
+	go application.GRPCSrv.MustRun()
 
 	// TODO: Иннициализировать приложение (app)
+
+	stop := make(chan os.Signal, 1) // блокирует горутину до прихода ответа
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	<- stop
+
+	application.GRPCSrv.Stop() // Вручную прерываем сервер по нажатию клавиш
+	log.Info("application stopped") 
+
 }
 
 func setupLogger(env string) *slog.Logger {
