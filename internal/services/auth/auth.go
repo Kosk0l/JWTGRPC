@@ -36,6 +36,7 @@ type AppProvider interface {
 // Глобальная переменная ошибки
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrUserExist = errors.New("user already exists")
 )
 
 
@@ -145,6 +146,11 @@ func (a *Auth) RegisterNewUser(ctx context. Context, email string, pass string) 
 	// Сохранение данных пользователя по 3-м параметрам
 	id, err := a.usrSaver.SaveUser(ctx, email, passHach)
 	if err != nil {
+		if errors.Is(err, storage.ErrUserExist) {
+			log.Warn("user already exists", sl.Err(err))
+			return 0, fmt.Errorf("%s: %w", op, ErrUserExist)
+		}
+
 		log.Error("Failed to safe user", sl.Err(err))
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
