@@ -7,6 +7,8 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
+//===================================================================================================================//
+
 // Струкртура для YAML //local.yaml
 type Config struct {
 	Env 		string 		`yaml:"env" env-default:"local"`
@@ -19,6 +21,8 @@ type GRPCConfig struct {
 	Port 	int 			`yaml:"port"`
 	TimeOut time.Duration 	`yaml:"timeout"`
 }
+
+//===================================================================================================================//
 
 // Функция загрузки конфига
 func MustLoad() *Config {
