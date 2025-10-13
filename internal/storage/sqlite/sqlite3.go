@@ -2,7 +2,7 @@ package sqlite
 
 import (
 	"JWTGRPC/internal/domain/models"
-	"JWTGRPC/internal/services/storage"
+	"JWTGRPC/internal/storage"
 	"context"
 	"database/sql" // Общие правила для всех sql БД
 	"errors"
@@ -39,7 +39,7 @@ func New(storagePath string) (*Storage, error) {
 
 // Сохранить нового юзера в бд в БД
 func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (int64, error) {
-	const op = "storage.sqlite.SaveuUer"
+	const op = "storage.sqlite.SaveUser"
 
 	// Запрос к бд
 	stmt, err := s.db.Prepare("INSERT INTO users(email, pass_hash) VALUES(?, ?)")
@@ -73,7 +73,7 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	const op = "storage.sqlite.User"
 
 	// Подготавливаем запрос
-	stmt, err := s.db.Prepare("SELECT id, email, pass_hash FROM users WHERE email=?")
+	stmt, err := s.db.Prepare("SELECT id, email, pass_hash FROM users WHERE email = ?")
 	if err != nil {
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -92,4 +92,29 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *Storage) App(ctx context.Context, id int) (models.App, error) {
+	const op = "storage.sqlite.App"
+
+	// Запрос к бд
+	stmt, err := s.db.Prepare("SELECT id, name, secret FROM apps WHERE id = ?")
+	if err != nil {
+		return models.App{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Выполняем запрос
+	row := stmt.QueryRowContext(ctx, id)
+
+	// заполняем объект
+	var app models.App
+	err = row.Scan(&app.ID, &app.Name, &app.Secret)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.App{}, fmt.Errorf("%s: %w", op, storage.ErrAppNotFound)
+		}
+		return models.App{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return app, nil
 }

@@ -4,7 +4,7 @@ import (
 	"JWTGRPC/internal/domain/models"
 	"JWTGRPC/internal/lib/jwt"
 	"JWTGRPC/internal/lib/logger/sl"
-	"JWTGRPC/internal/services/storage"
+	"JWTGRPC/internal/storage"
 	"context"
 	"errors"
 	"fmt"
@@ -16,12 +16,17 @@ import (
 
 //===================================================================================================================//
 
+// Пакет взаимодействия с БД и работой с Бизнес Логикой Сервиса
+type Auth struct {
+	log 		*slog.Logger
+	usrSaver 	UserSaver
+	usrProvider UserProvider
+	appProvider AppProvider 
+	tokenTTL 	time.Duration
+}
+
 type UserSaver interface {
-	SaveUser(
-		ctx context.Context,
-		email string,
-		passHach []byte,
-	) ( uid int64,err error)
+	SaveUser(ctx context.Context, email string, passHach []byte) ( uid int64, err error)
 }
 
 type UserProvider interface {
@@ -40,14 +45,6 @@ var (
 )
 
 
-// Пакет взаимодействия с БД и работой с Бизнес Логикой Сервиса
-type Auth struct {
-	log 		*slog.Logger
-	usrSaver 	UserSaver
-	usrProvider UserProvider
-	appProvider AppProvider 
-	tokenTTL 	time.Duration
-}
 
 //===================================================================================================================//
 

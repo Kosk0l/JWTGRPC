@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"JWTGRPC/internal/services/auth"
+	"JWTGRPC/internal/storage"
 	"context"
+	"errors"
 
 	ssov1 "github.com/Kosk0l/Protos/gen/go/sso"
 	"google.golang.org/grpc"
@@ -18,18 +21,13 @@ type Auth interface {
 		email string,
 		password string,
 		appID int,
-	) (
-		token string,
-		err error,
-	)
+	) ( token string, err error)
+
 	RegisterNewUser(
 		ctx context.Context,
 		email string,
 		password string,
-	) (
-		userID int,
-		err error,
-	)
+	) (userID int64,	err error)
 }
 
 // Структура, наследующая интерфейс со всеми методами - хендлерами
@@ -51,10 +49,7 @@ const (
 //===================================================================================================================//
 
 // Handler
-func (s *serverAPI) Login(
-	ctx context.Context,
-	req *ssov1.LoginRepuest,
-) (*ssov1.LoginResponse, error) {
+func (s *serverAPI) Login( ctx context.Context, req *ssov1.LoginRepuest) (*ssov1.LoginResponse, error) {
 	if req.GetEmail() == "" {
 		return nil, status.Error(codes.InvalidArgument, "bad Email")
 	}
@@ -67,13 +62,14 @@ func (s *serverAPI) Login(
 		return nil, status.Error(codes.InvalidArgument, "Bad AppID")
 	}
 
+
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppID()))
 	if err != nil {
-		//..
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid Argument")
+		}
 		return nil, status.Error(codes.Internal, "Internal error")
 	}
-
-
 
 	return &ssov1.LoginResponse{
 		Token: token,
@@ -81,10 +77,7 @@ func (s *serverAPI) Login(
 }
 
 // Handler
-func (s *serverAPI) Register(
-	ctx context.Context,
-	req *ssov1.RegisterRepuest,
-) (*ssov1.RegisterResponse, error) {
+func (s *serverAPI) Register( ctx context.Context, req *ssov1.RegisterRepuest) (*ssov1.RegisterResponse, error) {
 	
 	if req.GetEmail() == "" {
 		return nil, status.Error(codes.InvalidArgument, "bad Email")
@@ -96,6 +89,9 @@ func (s *serverAPI) Register(
 
 	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
+		if errors.Is(err, storage.ErrUserExist) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
+		}
 		return nil, status.Error(codes.Internal,"Bad Internal")
 	}
 
