@@ -1,18 +1,23 @@
 package sqlite
 
 import (
+	"JWTGRPC/internal/domain/models"
 	"JWTGRPC/internal/services/storage"
 	"context"
 	"database/sql" // Общие правила для всех sql БД
 	"errors"
 	"fmt"
+
 	"github.com/mattn/go-sqlite3"
 	_ "github.com/mattn/go-sqlite3" // Не используется напрямую, поэтому "_"
 )
 
+//===================================================================================================================//
+
 type Storage struct {
 	db *sql.DB // Коннект с бд
 }
+
 
 // Конструктор структуры Storage
 func New(storagePath string) (*Storage, error) {
@@ -28,6 +33,8 @@ func New(storagePath string) (*Storage, error) {
 	// заполненным локальной db1 переменной
 	return &Storage{db: db1}, nil 
 }
+
+//===================================================================================================================//
 
 
 // Сохранить нового юзера в бд в БД
@@ -60,3 +67,29 @@ func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (
 	return id, nil
 }
 
+
+// Возвращает юзера по email данным
+func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
+	const op = "storage.sqlite.User"
+
+	// Подготавливаем запрос
+	stmt, err := s.db.Prepare("SELECT id, email, pass_hash FROM users WHERE email=?")
+	if err != nil {
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Выполняем запрос
+	row := stmt.QueryRowContext(ctx, email)
+
+	// заполняем объект
+	var user models.User
+	err = row.Scan(&user.ID, &user.Email, &user.PassHash)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.User{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
